@@ -1,6 +1,6 @@
 import requests
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -15,19 +15,17 @@ app.add_middleware(
 
 # Модель запроса
 class BannerRequest(BaseModel):
-    prompt: str
-    style: str
-    width: int
-    height: int
+    prompt: str = Field(..., example="Generate a professional banner with text 'Hello'")
+    style: str = Field("default", example="default")
+    width: int = Field(512, ge=256, le=1024, example=512)  # ширина от 256 до 1024
+    height: int = Field(512, ge=256, le=1024, example=512)  # высота от 256 до 1024
 
-# Новый API-ключ
 RECRAFT_API_KEY = "vcZRwMLmLlJtxB6GPeiMatFoXfNHMQL1JwJkDbZiMABMT0cmvknQZd2F88cxJXmW"
 RECRAFT_API_URL = "https://external.api.recraft.ai/v1/images/generations"
 
 @app.post("/generate-banner")
 def generate_banner(request: BannerRequest):
     try:
-        # Параметры запроса согласно документации Recraft API
         payload = {
             "prompt": request.prompt,
             "style": request.style,
@@ -38,22 +36,25 @@ def generate_banner(request: BannerRequest):
             "Authorization": f"Bearer {RECRAFT_API_KEY}",
             "Content-Type": "application/json"
         }
-        
-        # Отправка запроса
+
+        # Логирование данных запроса (для отладки)
+        print("Sending payload:", payload)
+
+        # Отправка запроса к Recraft API
         response = requests.post(RECRAFT_API_URL, json=payload, headers=headers)
-        response.raise_for_status()
+        response.raise_for_status()  # Проверка на HTTP ошибки
 
-        # Проверка результата
+        # Парсинг ответа
         data = response.json()
-        image_url = data.get("image", None)  # Верное поле для URL изображения
+        image_url = data.get("image")
 
-        if image_url:
-            return {"success": True, "data": {"image_url": image_url}}
-        else:
-            return {"success": False, "message": "Failed to fetch image URL"}
+        if not image_url:
+            return {"success": False, "message": "Image URL not found in response"}
+        
+        return {"success": True, "data": {"image_url": image_url}}
 
-    except Exception as e:
-        return {"success": False, "message": f"Error: {str(e)}"}
+    except requests.exceptions.RequestException as e:
+        return {"success": False, "message": f"Request error: {str(e)}"}
 
 @app.get("/")
 def root():
