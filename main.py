@@ -1,11 +1,10 @@
-import requests
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
+import requests
 
 app = FastAPI()
 
-# CORS Middleware для фронтенда
+# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,38 +12,43 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Pydantic модель для данных запроса
-class GenerateImageRequest(BaseModel):
-    prompt: str
-    style: str
-
-# Recraft API ключ и URL
 RECRAFT_API_KEY = "vcZRwMLmLlJtxB6GPeiMatFoXfNHMQL1JwJkDbZiMABMT0cmvknQZd2F88cxJXmW"
 RECRAFT_API_URL = "https://external.api.recraft.ai/v1/images/generations"
 
+
 @app.post("/generate-banner")
-def generate_banner(request: GenerateImageRequest):
+async def generate_banner(
+    business_description: str = Form(...),
+    headline: str = Form(...),
+    style: str = Form("digital_illustration")
+):
     try:
-        # Формирование запроса к Recraft API
+        # Формирование промпта на основе входных данных
+        prompt = (
+            f"Design a banner for a business: '{business_description}'. "
+            f"Include the headline: '{headline}' in the design. "
+            f"The style should be: '{style}'. "
+            f"The design should look clean, professional, and visually appealing."
+        )
+
+        # Запрос к Recraft API
         payload = {
-            "prompt": request.prompt,
-            "style": request.style
+            "prompt": prompt,
+            "style": style
         }
-        headers = {
-            "Authorization": f"Bearer {RECRAFT_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {RECRAFT_API_KEY}"}
+
         response = requests.post(RECRAFT_API_URL, json=payload, headers=headers)
         response.raise_for_status()
 
-        # Получаем URL изображения из ответа
-        data = response.json()
-        image_url = data["data"][0]["url"]
-
+        # Получение URL изображения из ответа
+        image_url = response.json()["data"][0]["url"]
         return {"success": True, "data": {"image_url": image_url}}
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error: {str(e)}")
+        return {"success": False, "message": str(e)}
+
 
 @app.get("/")
 def root():
-    return {"message": "FastAPI backend for Recraft Image Generator is running!"}
+    return {"message": "FastAPI backend is running"}
