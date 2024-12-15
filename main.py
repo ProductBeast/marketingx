@@ -24,24 +24,33 @@ RECRAFT_API_URL = "https://external.api.recraft.ai/v1/images/generations"
 
 @app.post("/generate-banner")
 def generate_banner(request: BannerRequest):
-    # Отправка запроса к Recraft API
     try:
+        # Формирование запроса к Recraft API
         payload = {
-            "prompt": request.text,
-            "style": request.style
+            "prompt": request.text,  # Текст, используемый для генерации изображения
+            "style": request.style,
+            "width": request.width,
+            "height": request.height
         }
         headers = {
             "Authorization": f"Bearer {RECRAFT_API_KEY}",
             "Content-Type": "application/json"
         }
+
         response = requests.post(RECRAFT_API_URL, json=payload, headers=headers)
         response.raise_for_status()
 
-        # Получение URL изображения из ответа
-        image_url = response.json()["data"][0]["url"]
+        # Обработка ответа
+        data = response.json()
+        image_url = data.get("data", {}).get("image_url")
+
+        if not image_url:
+            return {"success": False, "message": "No image URL returned from API."}
+
         return {"success": True, "data": {"image_url": image_url}}
+
     except Exception as e:
-        return {"success": False, "message": str(e)}
+        return {"success": False, "message": f"Error: {str(e)}"}
 
 @app.get("/")
 def root():
