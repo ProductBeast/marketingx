@@ -19,7 +19,7 @@ RECRAFT_API_KEY = "vcZRwMLmLlJtxB6GPeiMatFoXfNHMQL1JwJkDbZiMABMT0cmvknQZd2F88cxJ
 OPENAI_API_KEY = "ваш_openai_api_ключ"
 
 # Инициализация OpenAI
-openai.api_key = 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
+openai.api_key = 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
 
 RECRAFT_API_URL = "https://external.api.recraft.ai/v1/images/generations"
 
