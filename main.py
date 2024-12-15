@@ -19,13 +19,14 @@ class BannerRequest(BaseModel):
     width: int
     height: int
 
-RECRAFT_API_KEY = "ваш_ключ_Recraft"
+# Ваш ключ Recraft API
+RECRAFT_API_KEY = "nbMF57gbMPui8ItRZdfIGqM9asqhp4lJ2hHOpXngOQuAWsjzjvRqs5Ps9cK68Lzy"
 RECRAFT_API_URL = "https://api.recraft.ai/v3/generate"
 
 @app.post("/generate-banner")
 def generate_banner(request: BannerRequest):
-    # Отправка запроса к Recraft API
     try:
+        # Подготовка запроса к Recraft API
         payload = {
             "text": request.text,
             "style": request.style,
@@ -33,14 +34,20 @@ def generate_banner(request: BannerRequest):
             "height": request.height
         }
         headers = {"Authorization": f"Bearer {RECRAFT_API_KEY}"}
-        response = requests.post(RECRAFT_API_URL, json=payload, headers=headers)
-        response.raise_for_status()  # Проверка на ошибки
 
-        # Получение URL изображения из ответа
+        # Отправка запроса
+        response = requests.post(RECRAFT_API_URL, json=payload, headers=headers)
+        response.raise_for_status()
+
+        # Логирование ответа
+        print("Recraft API Response:", response.json())
+
+        # Получение URL изображения
         image_url = response.json().get("image_url")
         if not image_url:
-            return {"success": False, "message": "Failed to generate image from Recraft API"}
+            return {"success": False, "message": "Image URL not found in Recraft API response"}
 
+        # Возвращаем ссылку на изображение
         return {"success": True, "data": {"image_url": image_url}}
     except Exception as e:
         return {"success": False, "message": str(e)}
