@@ -1,6 +1,6 @@
 import requests
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -13,12 +13,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Модель запроса
 class BannerRequest(BaseModel):
-    prompt: str = Field(..., example="Generate a professional banner with text 'Hello'")
-    style: str = Field("default", example="default")
-    width: int = Field(512, ge=256, le=1024, example=512)  # ширина от 256 до 1024
-    height: int = Field(512, ge=256, le=1024, example=512)  # высота от 256 до 1024
+    text: str
+    style: str
+    width: int
+    height: int
 
 RECRAFT_API_KEY = "vcZRwMLmLlJtxB6GPeiMatFoXfNHMQL1JwJkDbZiMABMT0cmvknQZd2F88cxJXmW"
 RECRAFT_API_URL = "https://external.api.recraft.ai/v1/images/generations"
@@ -26,8 +25,9 @@ RECRAFT_API_URL = "https://external.api.recraft.ai/v1/images/generations"
 @app.post("/generate-banner")
 def generate_banner(request: BannerRequest):
     try:
+        # Подготовка запроса
         payload = {
-            "prompt": request.prompt,
+            "prompt": request.text,
             "style": request.style,
             "width": request.width,
             "height": request.height
@@ -36,26 +36,20 @@ def generate_banner(request: BannerRequest):
             "Authorization": f"Bearer {RECRAFT_API_KEY}",
             "Content-Type": "application/json"
         }
-
-        # Логирование данных запроса (для отладки)
-        print("Sending payload:", payload)
-
-        # Отправка запроса к Recraft API
+        # Запрос к Recraft API
         response = requests.post(RECRAFT_API_URL, json=payload, headers=headers)
-        response.raise_for_status()  # Проверка на HTTP ошибки
+        response.raise_for_status()
 
-        # Парсинг ответа
+        # Получение URL изображения
         data = response.json()
-        image_url = data.get("image")
-
+        image_url = data.get("data", [{}])[0].get("url")  # Извлечение по пути data[0].url
         if not image_url:
             return {"success": False, "message": "Image URL not found in response"}
-        
-        return {"success": True, "data": {"image_url": image_url}}
 
+        return {"success": True, "data": {"image_url": image_url}}
     except requests.exceptions.RequestException as e:
         return {"success": False, "message": f"Request error: {str(e)}"}
 
 @app.get("/")
 def root():
-    return {"message": "FastAPI backend is running!"}
+    return {"message": "FastAPI backend is running"}
