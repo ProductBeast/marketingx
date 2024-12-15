@@ -12,7 +12,17 @@ class BannerRequest(BaseModel):
 
 @app.post("/generate-banner")
 def generate_banner(request: BannerRequest):
-    return {"success": True, "message": "Banner generated successfully", "data": request.dict()}
+    # В реальном сценарии здесь будет логика генерации баннера
+    # Пока возвращаем временный URL
+    return {
+        "success": True,
+        "message": "Banner generated successfully",
+        "data": {
+            "image_url": "https://via.placeholder.com/{}x{}?text={}".format(
+                request.width, request.height, request.text
+            )
+        },
+    }
 
 @app.get("/")
 def read_root():
@@ -20,8 +30,8 @@ def read_root():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Разрешить запросы с любого домена. Для безопасности позже можно указать точные домены.
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Разрешить любые HTTP методы (POST, GET и т.д.)
-    allow_headers=["*"],  # Разрешить любые заголовки
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
