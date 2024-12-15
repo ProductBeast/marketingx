@@ -19,35 +19,26 @@ class BannerRequest(BaseModel):
     width: int
     height: int
 
-# Ваш ключ Recraft API
-RECRAFT_API_KEY = "nbMF57gbMPui8ItRZdfIGqM9asqhp4lJ2hHOpXngOQuAWsjzjvRqs5Ps9cK68Lzy"
-RECRAFT_API_URL = "https://api.recraft.ai/v3/generate"
+RECRAFT_API_KEY = "vcZRwMLmLlJtxB6GPeiMatFoXfNHMQL1JwJkDbZiMABMT0cmvknQZd2F88cxJXmW"
+RECRAFT_API_URL = "https://external.api.recraft.ai/v1/images/generations"
 
 @app.post("/generate-banner")
 def generate_banner(request: BannerRequest):
+    # Отправка запроса к Recraft API
     try:
-        # Подготовка запроса к Recraft API
         payload = {
-            "text": request.text,
-            "style": request.style,
-            "width": request.width,
-            "height": request.height
+            "prompt": request.text,
+            "style": request.style
         }
-        headers = {"Authorization": f"Bearer {RECRAFT_API_KEY}"}
-
-        # Отправка запроса
+        headers = {
+            "Authorization": f"Bearer {RECRAFT_API_KEY}",
+            "Content-Type": "application/json"
+        }
         response = requests.post(RECRAFT_API_URL, json=payload, headers=headers)
         response.raise_for_status()
 
-        # Логирование ответа
-        print("Recraft API Response:", response.json())
-
-        # Получение URL изображения
-        image_url = response.json().get("image_url")
-        if not image_url:
-            return {"success": False, "message": "Image URL not found in Recraft API response"}
-
-        # Возвращаем ссылку на изображение
+        # Получение URL изображения из ответа
+        image_url = response.json()["data"][0]["url"]
         return {"success": True, "data": {"image_url": image_url}}
     except Exception as e:
         return {"success": False, "message": str(e)}
